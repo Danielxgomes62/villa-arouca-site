@@ -30,6 +30,9 @@
 
 * { box-sizing: border-box; }
 input, select, textarea, button { font-family: inherit; }
+/* <img> agora carrega width/height reais (evita layout shift); isto impede que
+   esses atributos vazem para o layout. Regras mais específicas continuam mandando. */
+img { max-width: 100%; height: auto; }
 html { scroll-behavior: smooth; }
 
 body {
