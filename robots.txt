@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin-reservas.html
+Disallow: /codigos-desconto.html
+
+Sitemap: https://villaarouca.com.br/sitemap.xml
