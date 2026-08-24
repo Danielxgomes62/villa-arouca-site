@@ -23,14 +23,27 @@ function montarEmailLembrete(item, chave) {
 </html>`;
 }
 
+// Precisa ser um domínio verificado no Resend; o padrão resend.dev só entrega
+// para o dono da conta, então em produção EMAIL_REMETENTE é obrigatório.
+const EMAIL_REMETENTE =
+  process.env.EMAIL_REMETENTE || "Casa Vinnus <onboarding@resend.dev>";
+
 async function enviarEmail(destinatarios, assunto, html) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey || !destinatarios || destinatarios.length === 0) return;
   try {
     await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ from: "Casa Vinnus <onboarding@resend.dev>", to: destinatarios, subject: assunto, html }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from: EMAIL_REMETENTE,
+        to: destinatarios,
+        subject: assunto,
+        html,
+      }),
     });
   } catch (e) {
     console.error("Falha ao enviar lembrete:", e);
@@ -65,7 +78,11 @@ export default async () => {
         item.expiraEm <= limiteSuperior
       ) {
         if (item.email) {
-          await enviarEmail([item.email], "Sua vaga na Casa Vinnus está prestes a expirar", montarEmailLembrete(item, b.key));
+          await enviarEmail(
+            [item.email],
+            "Sua vaga na Casa Vinnus está prestes a expirar",
+            montarEmailLembrete(item, b.key),
+          );
         }
         item.lembreteEnviado = true;
         mudou = true;
@@ -74,7 +91,9 @@ export default async () => {
 
     if (mudou) {
       try {
-        const opcoes = resultado.etag ? { onlyIfMatch: resultado.etag } : { onlyIfNew: true };
+        const opcoes = resultado.etag
+          ? { onlyIfMatch: resultado.etag }
+          : { onlyIfNew: true };
         await store.setJSON(b.key, registro, opcoes);
       } catch {
         // se der conflito de concorrência, o próximo ciclo (5 min depois) tenta de novo

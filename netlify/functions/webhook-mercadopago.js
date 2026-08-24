@@ -38,15 +38,23 @@ function montarVoucherHtml(item, chave) {
 </html>`;
 }
 
+// Precisa ser um domínio verificado no Resend; o padrão resend.dev só entrega
+// para o dono da conta, então em produção EMAIL_REMETENTE é obrigatório.
+const EMAIL_REMETENTE =
+  process.env.EMAIL_REMETENTE || "Casa Vinnus <onboarding@resend.dev>";
+
 async function enviarEmail(destinatarios, assunto, html) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey || !destinatarios || destinatarios.length === 0) return;
   try {
     await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
       body: JSON.stringify({
-        from: "Casa Vinnus <onboarding@resend.dev>",
+        from: EMAIL_REMETENTE,
         to: destinatarios,
         subject: assunto,
         html,
@@ -64,7 +72,11 @@ async function notificarConfirmacao(item, chave, siteUrl) {
 
   // Voucher para o hóspede
   if (item.email) {
-    await enviarEmail([item.email], "Sua visita à Casa Vinnus está confirmada", voucherHtml);
+    await enviarEmail(
+      [item.email],
+      "Sua visita à Casa Vinnus está confirmada",
+      voucherHtml,
+    );
   }
 
   // Aviso interno — aceita um ou mais e-mails, separados por vírgula na variável EMAIL_EQUIPE
@@ -74,7 +86,9 @@ async function notificarConfirmacao(item, chave, siteUrl) {
     .filter(Boolean);
 
   if (emailsEquipe.length > 0) {
-    const linkPainel = siteUrl ? `${siteUrl}/admin-reservas.html` : "/admin-reservas.html";
+    const linkPainel = siteUrl
+      ? `${siteUrl}/admin-reservas.html`
+      : "/admin-reservas.html";
     const htmlEquipe = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="UTF-8"></head>
@@ -93,7 +107,11 @@ async function notificarConfirmacao(item, chave, siteUrl) {
       </div>
 </body>
 </html>`;
-    await enviarEmail(emailsEquipe, `Nova reserva confirmada — ${dataFormatada} às ${horario}`, htmlEquipe);
+    await enviarEmail(
+      emailsEquipe,
+      `Nova reserva confirmada — ${dataFormatada} às ${horario}`,
+      htmlEquipe,
+    );
   }
 }
 
@@ -130,9 +148,12 @@ export default async (req) => {
   // nunca confiamos apenas no que a notificação diz, sempre confirmamos.
   let pagamento;
   try {
-    const resp = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const resp = await fetch(
+      `https://api.mercadopago.com/v1/payments/${paymentId}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
     if (!resp.ok) {
       return new Response("ok", { status: 200 });
     }
@@ -174,11 +195,18 @@ export default async (req) => {
 
     if (itens[idx].status === "confirmado") break; // já processado (webhook pode repetir)
 
-    itens[idx] = { ...itens[idx], status: "confirmado", pagamentoId: paymentId, confirmadoEm: new Date().toISOString() };
+    itens[idx] = {
+      ...itens[idx],
+      status: "confirmado",
+      pagamentoId: paymentId,
+      confirmadoEm: new Date().toISOString(),
+    };
     const novoRegistro = { itens };
 
     try {
-      const opcoes = etagAtual ? { onlyIfMatch: etagAtual } : { onlyIfNew: true };
+      const opcoes = etagAtual
+        ? { onlyIfMatch: etagAtual }
+        : { onlyIfNew: true };
       const gravado = await store.setJSON(chave, novoRegistro, opcoes);
       if (gravado === false) continue;
       await notificarConfirmacao(itens[idx], chave, new URL(req.url).origin);
