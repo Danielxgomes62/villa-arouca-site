@@ -128,14 +128,9 @@ src="https://www.facebook.com/tr?id=2610776956103703&ev=PageView&noscript=1"
   <div class="container">
     <p class="eyebrow" style="text-align:center;">Hospedagem</p>
     <h2 style="text-align:center; margin-bottom:0.6rem;">Sua chegada à Villa Arouca</h2>
-    <p style="text-align:center; max-width:46ch; margin:0 auto 2.5rem;">Preencha os dados abaixo. A Central de Reservas responde com disponibilidade e valores.</p>
+    <p style="text-align:center; max-width:46ch; margin:0 auto 2.5rem;">Escolha as datas e veja disponibilidade e valores na hora, com reserva confirmada online.</p>
 
     <form id="form-reserva" class="form-card">
-      <div class="campo">
-        <label for="nome">Nome</label>
-        <input type="text" id="nome" required placeholder="Seu nome completo">
-      </div>
-
       <div class="linha-dupla">
         <div class="campo">
           <label for="checkin">Chegada</label>
@@ -152,17 +147,12 @@ src="https://www.facebook.com/tr?id=2610776956103703&ev=PageView&noscript=1"
         <input type="number" id="pessoas" min="1" max="4" required placeholder="Até 4 por cabana">
       </div>
 
-      <div class="campo">
-        <label for="obs">Observações (opcional)</label>
-        <textarea id="obs" rows="3" placeholder="Vai com pet? Alguma preferência?"></textarea>
-      </div>
-
-      <button type="submit" class="btn-enviar">Enviar solicitação</button>
+      <button type="submit" class="btn-enviar">Ver disponibilidade e reservar</button>
     </form>
 
     <div class="alt-reserva">
-      <p style="font-size:0.9rem; color:var(--tinta); opacity:0.75;">Prefere outro canal?</p>
-      <a href="#" id="link-booking" class="btn-booking" target="_blank" rel="noopener">Reservar pela Booking.com</a>
+      <p style="font-size:0.9rem; color:var(--tinta); opacity:0.75;">Prefere falar com a Central de Reservas?</p>
+      <a href="https://wa.me/5522999071437?text=Ol%C3%A1!%20Gostaria%20de%20reservar%20uma%20cabana%20na%20Villa%20Arouca." class="btn-booking" target="_blank" rel="noopener">Reservar pelo WhatsApp</a>
     </div>
   </div>
 </section>
@@ -211,11 +201,7 @@ src="https://www.facebook.com/tr?id=2610776956103703&ev=PageView&noscript=1"
 <script src="js/nav.js" defer></script>
 <script src="js/motion.js" defer></script>
 <script>
-  var WHATSAPP_RESERVAS = "5522999071437";
-  var LINK_BOOKING = "https://www.booking.com/hotel/br/villa-arouca-areal.pt-br.html";
-
-  var linkBooking = document.getElementById('link-booking');
-  linkBooking.href = LINK_BOOKING;
+  var MOTOR_RESERVAS = "https://book.omnibees.com/hotel/53380/rateplan/1373152?lang=pt-BR";
 
   var checkinEl = document.getElementById('checkin');
   var checkoutEl = document.getElementById('checkout');
@@ -226,6 +212,7 @@ src="https://www.facebook.com/tr?id=2610776956103703&ev=PageView&noscript=1"
     return d.toISOString().split('T')[0];
   }
 
+  checkinEl.min = new Date().toISOString().split('T')[0];
   checkinEl.addEventListener('change', function () {
     if (checkinEl.value) {
       var minSaida = addDias(checkinEl.value, 1);
@@ -236,28 +223,15 @@ src="https://www.facebook.com/tr?id=2610776956103703&ev=PageView&noscript=1"
     }
   });
 
+  // Omnibees espera DDMMAAAA
+  function ddmmaaaa(d) { var p = d.split('-'); return p[2] + p[1] + p[0]; }
+
   document.getElementById('form-reserva').addEventListener('submit', function (e) {
     e.preventDefault();
-    var nome = document.getElementById('nome').value.trim();
-    var checkin = checkinEl.value;
-    var checkout = checkoutEl.value;
-    var pessoas = document.getElementById('pessoas').value;
-    var obs = document.getElementById('obs').value.trim();
-
-    function formatarData(d) {
-      if (!d) return '';
-      var partes = d.split('-');
-      return partes[2] + '/' + partes[1] + '/' + partes[0];
-    }
-
-    var mensagem = "Olá! Gostaria de reservar uma cabana na Villa Arouca.\n" +
-      "Nome: " + nome + "\n" +
-      "Chegada: " + formatarData(checkin) + "\n" +
-      "Saída: " + formatarData(checkout) + "\n" +
-      "Número de pessoas: " + pessoas +
-      (obs ? "\nObservações: " + obs : "");
-
-    var url = "https://wa.me/" + WHATSAPP_RESERVAS + "?text=" + encodeURIComponent(mensagem);
+    var url = MOTOR_RESERVAS +
+      "&CheckIn=" + ddmmaaaa(checkinEl.value) +
+      "&CheckOut=" + ddmmaaaa(checkoutEl.value) +
+      "&NRooms=1&ad=" + document.getElementById('pessoas').value + "&ch=0";
     window.open(url, '_blank');
   });
 </script>
